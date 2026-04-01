@@ -1,78 +1,74 @@
 import streamlit as st
-import time
 import random
 
-# Tive que mudar a estratégia! O Tkinter não roda no servidor do Streamlit 
-# pq ele tenta abrir uma janela física. Entendi que pra Web a lógica é outra.
-# Versão 2.0 - "A Cobrinha por Botões" kkk
+# Título com cara de "Projeto em Construção"
+st.set_page_config(page_title="Snake Lab v2", page_icon="🐍")
+st.title("🐍 Lab de Python: Desafio da Lógica")
 
-st.title("🐍 Meu Estudo de Lógica: Snake Game")
-
-# Setup do Tabuleiro (Lista de listas pra representar o grid)
-if 'snake' not in st.session_state:
-    st.session_state.snake = [[5, 5], [5, 6], [5, 7]]
-    st.session_state.food = [random.randint(0, 9), random.randint(0, 9)]
-    st.session_state.direction = "Cima"
+# Inicializando o estado do jogo (Session State é como a 'memória' do navegador)
+if 'snake_pos' not in st.session_state:
+    st.session_state.snake_pos = [[5, 5]]
+    st.session_state.food_pos = [random.randint(0, 9), random.randint(0, 9)]
     st.session_state.score = 0
-    st.session_state.game_over = False
+    st.session_state.fim_de_jogo = False
 
-def mover(nova_dir):
-    if st.session_state.game_over:
+# Função que processa o movimento quando o botão é clicado
+def mover_cobra(direcao):
+    if st.session_state.fim_de_jogo:
         return
 
-    st.session_state.direction = nova_dir
-    head = st.session_state.snake[-1].copy()
+    cabeca = st.session_state.snake_pos[-1].copy()
     
-    if nova_dir == "Cima": head[0] -= 1
-    elif nova_dir == "Baixo": head[0] += 1
-    elif nova_dir == "Esquerda": head[1] -= 1
-    elif nova_dir == "Direita": head[1] += 1
+    if direcao == "Cima": cabeca[0] -= 1
+    elif direcao == "Baixo": cabeca[0] += 1
+    elif direcao == "Esquerda": cabeca[1] -= 1
+    elif direcao == "Direita": cabeca[1] += 1
 
-    # Checar se bateu na parede (Grid 10x10)
-    if head[0] < 0 or head[0] >= 10 or head[1] < 0 or head[1] >= 10 or head in st.session_state.snake:
-        st.session_state.game_over = True
-        return
-
-    st.session_state.snake.append(head)
-    
-    if head == st.session_state.food:
-        st.session_state.score += 1
-        st.session_state.food = [random.randint(0, 9), random.randint(0, 9)]
+    # Checar colisão com as bordas do grid 10x10
+    if cabeca[0] < 0 or cabeca[0] > 9 or cabeca[1] < 0 or cabeca[1] > 9 or cabeca in st.session_state.snake_pos:
+        st.session_state.fim_de_jogo = True
     else:
-        st.session_state.snake.pop(0)
+        st.session_state.snake_pos.append(cabeca)
+        if cabeca == st.session_state.food_pos:
+            st.session_state.score += 10
+            st.session_state.food_pos = [random.randint(0, 9), random.randint(0, 9)]
+        else:
+            st.session_state.snake_pos.pop(0)
 
-# Interface do Usuário
+# Renderização do Visual
 st.subheader(f"Pontos: {st.session_state.score}")
 
-if st.session_state.game_over:
-    st.error(f"GAME OVER! Você fez {st.session_state.score} pontos.")
-    if st.button("Tentar de novo"):
+if st.session_state.fim_de_jogo:
+    st.error(f"GAME OVER! Score final: {st.session_state.score}")
+    if st.button("Reiniciar"):
         st.session_state.clear()
         st.rerun()
 else:
-    # Desenhar o "Tabuleiro" usando emojis (mais simples pra quem está aprendendo)
-    grid = ""
+    # Criando o tabuleiro usando Markdown e Emojis
+    tabuleiro = ""
     for r in range(10):
+        linha = ""
         for c in range(10):
-            if [r, c] == st.session_state.snake[-1]:
-                grid += "🟢 " # Cabeça
-            elif [r, c] in st.session_state.snake:
-                grid += "🟩 " # Corpo
-            elif [r, c] == st.session_state.food:
-                grid += "🍎 " # Comida
+            if [r, c] == st.session_state.snake_pos[-1]:
+                linha += "🟢" # Cabeça
+            elif [r, c] in st.session_state.snake_pos:
+                linha += "🟩" # Corpo
+            elif [r, c] == st.session_state.food_pos:
+                linha += "🍎" # Comida
             else:
-                grid += "⬛ " # Vazio
-        grid += "\n"
+                linha += "⬜" # Fundo
+        tabuleiro += linha + "\n"
     
-    st.text(grid)
+    st.text(tabuleiro)
 
-    # Controles (Pq o teclado no navegador é mais difícil de configurar)
-    st.write("Controles:")
-    col1, col2, col3 = st.columns([1,1,1])
-    with col2: st.button("⬆️", on_click=mover, args=("Cima",))
-    c1, c2, c3 = st.columns([1,1,1])
-    with c1: st.button("⬅️", on_click=mover, args=("Esquerda",))
-    with c2: st.button("⬇️", on_click=mover, args=("Baixo",))
-    with c3: st.button("➡️", on_click=mover, args=("Direita",))
+    # Controles por botões (único jeito 100% seguro no Streamlit Cloud free)
+    st.write("Clique para mover:")
+    c1, c2, c3 = st.columns([1, 1, 1])
+    with c2: st.button("⬆️", on_click=mover_cobra, args=("Cima",))
+    
+    c4, c5, c6 = st.columns([1, 1, 1])
+    with c4: st.button("⬅️", on_click=mover_cobra, args=("Esquerda",))
+    with c5: st.button("⬇️", on_click=mover_cobra, args=("Baixo",))
+    with c6: st.button("➡️", on_click=mover_cobra, args=("Direita",))
 
-st.info("Ainda estou aprendendo a fazer o movimento automático, por enquanto é no clique! kkk")
+st.caption("Nota de estudo: Implementando botões porque o Streamlit não captura eventos de teclado nativos como um app desktop.")
